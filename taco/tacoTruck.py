@@ -7,103 +7,141 @@ class Emotion(Enum):
 	angry  = 1
 	hungry = 2
 	happy  = 3
+	
+	def upgrade(self):
+		return {
+			Emotion.angry  : Emotion.hungry,
+			Emotion.hungry : Emotion.happy,
+			Emotion.happy  : Emotion.happy,
+		}[self]
 
-class Customer:
+	def downgrade(self):
+		return {
+			Emotion.angry  : Emotion.angry,
+			Emotion.hungry : Emotion.angry,
+			Emotion.happy  : Emotion.hungry,
+		}[self]
+
+class FoodTruckParticipant:
 	def __init__(self):
+		self.whatIAm = "participant"
+	
+	def say(self, sayList ):
+		print( self.whatIAm + "\t> " , end='')		
+		for element in sayList:
+			print( element, end='')
+		print()
+
+class Customer(FoodTruckParticipant):
+	def __init__(self, name: str):
+		self.whatIAm = "😀 " + name
 		self.emotion = Emotion.hungry
 		self.want = ''
-		print("Cust: I am born!")
+		self.say(("I am born!"))
 
-	
 	def wants(self, foodWant: str):
-		print("Cust: Do I want a", foodWant,"?")
+		self.say(("Do I want a ", foodWant,"?"))
 		if self.emotion != Emotion.happy:
 			self.want = foodWant
-			print("Cust: yes")
+			self.say(("Yup"))
 		else:
 			self.want = ''
-			print("Cust: no")
+			self.say(("Nope"))
 		self.viewMind()
 			
 	def given(self, foodStuff: str):
-		print("Cust: I was given a", foodStuff)
+		self.say(("I was given a '", foodStuff, "'"))
 		if self.want == foodStuff:
-			self.want = ''
-		self.selfReflection()
+			self.emotion = self.emotion.upgrade()
+		else:
+			self.emotion = self.emotion.downgrade()
 		self.viewMind()
-		
-	def selfReflection(self):
-		print("Cust: I am reflecting")
-		switchCase = self.emotion
-		if   ( switchCase == Emotion.happy  ) :
-			self.emotion = Emotion.hungry
-		elif ( switchCase == Emotion.hungry ) :
-			if self.want == '':
-				self.emotion = Emotion.happy
-			else:
-				self.emotion = Emotion.angry
-		elif ( switchCase == Emotion.angry  ) :
-			if self.want == '':
-				self.emotion = Emotion.hungry
-			else:
-				print("I'm so mad!!")
 	
+	def selfReflection(self):
+		self.say(("I am reflecting"))
+		switchCase = self.emotion 
+		if self.emotion == Emotion.angry:
+			self.say(("I'm so mad!!"))
+		self.viewMind()
+
 	def viewMind(self):
-		print("Cust:", self.emotion, "& want:", self.want )
+		self.say(( "I'm feeling ", self.emotion, " & want: ", self.want ))
 
 
-class FoodTruck:
-	def __init__(self):
-		self.stock = {
-			'taco'   : 5,
-			'burger' : 0
-		}
-		print("Truck: I am in business!")
+class FoodTruck(FoodTruckParticipant):
+	def __init__(self, name):
+		self.whatIAm = "🚛 " + name
+		self.stock = {}
+		self.say(("I am in business!"))
+		self.readStock()
 
 
 	def serveCustomer(self, customer: Customer ):
-		#print( self.stock[customer.want] )
-		print("Truck: Customer wants",customer.want)
+		self.customerServiceWelcome( customer )
+		self.giveTo( customer )
+		self.readStock()
+		
+	def giveTo(self, customer: Customer):
+		self.say(("Customer wants ",customer.want))
 		if customer.want in self.stock:
 			if self.stock[customer.want] > 0:
-				print("Truck: here you go")
+				customerPreviousEmotion = customer.emotion
+				self.say(("here you go"))
 				self.stock[customer.want] -= 1
 				customer.given(customer.want)
+				if customerPreviousEmotion == Emotion.angry:
+					self.say(("I'm sorry you were feeling Angry, here's another"))
+					self.giveTo(customer)
 			else:
-				print("Truck: I'm sold out of", customer.want)
+				self.say(("I'm sold out of ", customer.want))
 				customer.given('')
 		elif customer.want == '':
-			print("Truck: You didn't ask for anything")
+			self.say(("You didn't ask for anything"))
+			customer.given('')
 		else:
-			print("Truck: I don't have any of that")
+			self.say(("I don't have any of that"))
+			customer.given('')
+		
+	def readStock(self):
+		self.say(("I have ", self.stock))
+
+	def stockUpOn(self, foodStuff: str, count: int):
+		self.say(("I'm stocking up on ", foodStuff, " += ", count))
+		if foodStuff in self.stock:
+			self.stock[foodStuff] += count
+		else:
+			self.stock[foodStuff] = count
+		self.readStock()
 			
-		self.viewMind()
-	
-	def viewMind(self):
-		print("Truck: I have ",self.stock)
+	def customerServiceWelcome(self, customer: Customer ):
+		self.say(("Hello, how can I help you?"))		
+		customer.viewMind()
+
+
+#### #### #### #### ####  
 
 
 
-bob = Customer()
-tacoTruck = FoodTruck()
+bob = Customer("bob")
+tacoTruck = FoodTruck("tacoTruck")
+tacoTruck.stockUpOn("taco", 5)
 print("---")
 
 bob.wants('burger')
 print("---")
 tacoTruck.serveCustomer(bob)
-print("---")
+print(">> --- ")
 
 bob.wants('taco')
 print("---")
 tacoTruck.serveCustomer(bob)
-print("---")
+print(">> ---")
 
 bob.wants('taco')
 print("---")
 tacoTruck.serveCustomer(bob)
-print("---")
+print(">> ---")
 
-bob.wants('taco')
-print("---")
-tacoTruck.serveCustomer(bob)
-print("---")
+
+
+
